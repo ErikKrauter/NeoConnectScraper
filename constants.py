@@ -1,4 +1,6 @@
 from enum import Enum
+from dotenv import load_dotenv
+import os
 
 # Ids of google sheets
 original_sheet_id = "1U754gABJNVSj4j-pyQ2C-YIWPCXGSEpPoofp1GAs1IQ"
@@ -15,8 +17,6 @@ BASE_FOLDER_ID = original_folder
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets", 'https://www.googleapis.com/auth/drive']
 NEOSS_LINK = "https://neoss.allied-star.com/"
 ORDER_MANAGEMETN_LINK = "https://neoss.allied-star.com/order-management/order-management"
-EMAIL = "nexam.ug@gmail.com"
-PASSWORD = "?&VZsX~d;:UKF'2"
 DOCTORS_OFFICES = { 
                     "Anne Szablowski, Dr. Alexander von Horn": "EB",
                     "Laureen Brandt": "LB",
@@ -29,3 +29,11 @@ class Products(Enum):
     BRUECKE = "Brücke"
     VENEER = "Veneer"
     VERBANDPLATTE = "Verbandplatte"
+
+# Load the .env file
+# it contains the password and email
+load_dotenv()
+
+# Access the variables
+EMAIL = os.getenv("EMAIL")
+PASSWORD = os.getenv("PASSWORD")
