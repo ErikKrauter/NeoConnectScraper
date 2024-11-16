@@ -1,0 +1,11 @@
+# confidential information
+.env
+credentials_gsheet.json
+
+# virtual env
+.venv/
+
+# Compiled files
+__pycache__/
+*.pyc
+*.pyo
