@@ -10,7 +10,7 @@ def initialize_services(credentials_file):
     drive_service = build("drive", "v3", credentials=creds)
     return gspread_client, drive_service
 
-gsheet_client, _ = initialize_services("credentials_gsheet.json")
+gsheet_client, _ = initialize_services("credentials.json")
 
 destination_sheet = gsheet_client.open_by_key(DESTINATION_SHEET_ID)
 DESTINATION_SHEET_TABLE_HEADERS = destination_sheet.sheet1.row_values(1)

@@ -1,6 +1,6 @@
 # confidential information
 .env
-credentials_gsheet.json
+credentials.json
 
 # virtual env
 .venv/

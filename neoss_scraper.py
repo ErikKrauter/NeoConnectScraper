@@ -48,7 +48,7 @@ def simple_login():
 
 def scrape_orders():
 
-    gsheet_client, gdrive_client = initialize_services("credentials_gsheet.json")
+    gsheet_client, gdrive_client = initialize_services("credentials.json")
     gsheet_handler = GSheetHandler(client=gsheet_client)
     gdrive_handler = GDriveHandler(client=gdrive_client)
     order_info_list: List[OrderInfo] = []
