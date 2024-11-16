@@ -5,7 +5,7 @@ import re
 # Define a class to hold the order information
 # we use OrderInfo to populate the destinatin google sheet (Druckaufträge)
 class OrderInfo:
-    def __init__(self, order_number: str, doctor_name: str, scan_time: str, remarks: str, tooth_number: str):
+    def __init__(self, order_number: str, doctor_name: str, scan_time: str, remarks: str = "", tooth_number: str = "", patient_number: str = ""):
         self.order_number = order_number
         self.doctors_office = DOCTORS_OFFICES[doctor_name]
         self.scan_date = self._convert_time_stamp_to_date(scan_time)
@@ -14,9 +14,10 @@ class OrderInfo:
         self.tooth_number = tooth_number # if multiple number seperate by comma w/o blanks
         self.product = ""
         self.details = ""
-        self.patient_number = ""
+        self.patient_number = patient_number
         self._has_multiple_products = False
-        self._parse_remarks()
+        if self.remarks:
+            self._parse_remarks()
         # 08.11.24 --> 24.11.08
         self.reverse_scan_date = ".".join(self.scan_date.split(".")[::-1])
         self.link_to_folder = None
@@ -34,6 +35,7 @@ class OrderInfo:
         self.product += string if self.product == "" else f" + {string}" 
 
     def _extract_patient_number(self):
+        if self.patient_number != "": return
         # Define regex pattern for variations of patient number
         # Match variations like 'pat', 'Pat.', 'Pat Nr.', 'Patientennummer', followed by a number
         pattern = r'\b(?:pat(?:ientennummer)?(?:\.|\s*Nr\.|\s*nummer|nr)?\s*[.:]?\s*)(\d{2,})'
@@ -49,18 +51,18 @@ class OrderInfo:
 
         try:
             # K, B, HSchien, TK, V
-            if Products.KRONE.value in self.product:
+            if Products.KRONE in self.product:
                 if re.search(r'\bteilkrone\b|\btk\b', lower_remarks):
                     details.append("TK")
                 if re.search(r'\bkrone\b', lower_remarks) or re.search(r'\bkeramikkrone\b', lower_remarks):
                     details.append("K")
-            if Products.BRUECKE.value in self.product:
+            if Products.BRUECKE in self.product:
                 details.append("B")
-            if Products.SCHIENE.value in self.product:
+            if Products.SCHIENE in self.product:
                 details.append("HSchiene")
-            if Products.VENEER.value in self.product:
+            if Products.VENEER in self.product:
                 details.append("V")
-            if Products.VERBANDPLATTE.value in self.product:
+            if Products.VERBANDPLATTE in self.product:
                 details.append("VB")
 
             # Check for UK and OK
@@ -91,8 +93,8 @@ class OrderInfo:
         # 2024-11-08 09:46:50
         remarks = self.remarks.lower()
         for product in Products:
-            if product.value.lower() in remarks:
-                self._write_to_product(product.value)
+            if product.lower() in remarks:
+                self._write_to_product(product)
         self._has_multiple_products = "+" in self.product
         
         self._extract_patient_number()

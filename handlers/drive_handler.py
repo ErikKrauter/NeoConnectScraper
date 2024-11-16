@@ -1,6 +1,7 @@
 import os
 import zipfile
 from googleapiclient.http import MediaFileUpload
+from googleapiclient.http import MediaIoBaseDownload
 from order_info import OrderInfo
 from constants import BASE_FOLDER_ID
 
@@ -29,7 +30,7 @@ class GDriveHandler:
         }
 
         file_metadata['parents'] = [parent_folder_id]
-        folder = self.drive_service.files().create(body=file_metadata, fields='id').execute()
+        folder = self.drive_client.files().create(body=file_metadata, fields='id').execute()
         return folder['id']
 
     # Define function to handle .zip file extraction and upload of .ply files
@@ -43,7 +44,7 @@ class GDriveHandler:
                 print(f"root: {root}, files: {files}")
                 for file in files:
                     print(f"file: {file}")
-                    if file.endswith('.ply'):
+                    if file.endswith('.ply') or file.endswith('.mtl') or file.endswith('.jpg'):
                         file_path = os.path.join(root, file)
                         file_name = os.path.basename(file_path)
                         file_metadata = {
@@ -51,11 +52,11 @@ class GDriveHandler:
                             'parents': [folder_id]
                         }
                         media = MediaFileUpload(file_path, resumable=True)
-                        google_drive_file = self.drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+                        google_drive_file = self.drive_client.files().create(body=file_metadata, media_body=media, fields='id').execute()
                         print(f'Uploaded file {file_name} with ID: {google_drive_file.get("id")}')
 
     # uplaod files to destination drive folder
-    def upload(self, order_info: OrderInfo) -> str:
+    def upload(self, order_info: OrderInfo, zip_file_path_: str=None) -> str:
         # Generate the main folder name
         suffix = order_info.patient_number if order_info.patient_number != "?" else order_info.order_number
         main_folder_name = f"{order_info.doctors_office}{suffix}"
@@ -68,15 +69,52 @@ class GDriveHandler:
         subfolder_id = self._find_or_create_folder(main_folder_id, subfolder_name)
         
         # Locate the .zip file
-        zip_file_path = os.path.expanduser(f"~/Downloads/{order_info.order_number}_ply.zip")
+        zip_file_path = zip_file_path_ if zip_file_path_ else os.path.expanduser(f"~/Downloads/{order_info.order_number}_ply.zip")
         if os.path.exists(zip_file_path):
             self._upload_ply_files(subfolder_id, zip_file_path)
         else:
             print(f"Zip file not found: {zip_file_path}")
         
         return f"https://drive.google.com/drive/folders/{subfolder_id}"
+    
+    def _extract_file_id(self, link: str) -> str:
+        """Extracts the file ID from a Google Drive link."""
+        if "id=" in link:
+            return link.split("id=")[1]
+        elif "drive.google.com" in link:
+            # Handles URLs in the format: https://drive.google.com/file/d/<id>/view
+            return link.split("/d/")[1].split("/")[0]
+        else:
+            raise ValueError(f"Invalid Google Drive link: {link}")
 
     # download files from folder_id
     # returns name of downloaded folder later handling
-    def download(self, folder_id: str) -> str:
-        pass
+    def download(self, link: str) -> str:
+        """Downloads a zip folder from Google Drive into ~/Downloads/"""
+
+        folder_id = self._extract_file_id(link)
+        # Define the download directory
+        download_dir = os.path.expanduser("~/Downloads/")
+
+        # Get the file metadata
+        file_metadata = self.drive_client.files().get(fileId=folder_id, fields="name, mimeType").execute()
+        file_name = file_metadata.get("name")
+        mime_type = file_metadata.get("mimeType")
+
+        # Validate that the file is a zip file
+        if mime_type != "application/zip" and not file_name.endswith(".zip"):
+            raise ValueError(f"The file is not a zip file: {file_name} (Mime Type: {mime_type})")
+
+        # Download the file
+        request = self.drive_client.files().get_media(fileId=folder_id)
+        local_zip_path = os.path.join(download_dir, file_name)
+
+        with open(local_zip_path, "wb") as file:
+            downloader = MediaIoBaseDownload(file, request)
+            done = False
+            while not done:
+                status, done = downloader.next_chunk()
+                print(f"Download progress: {int(status.progress() * 100)}%")
+
+        print(f"File downloaded successfully: {local_zip_path}")
+        return local_zip_path
