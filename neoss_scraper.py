@@ -79,7 +79,7 @@ def scrape_orders():
         status_cell = wait_for_element(row, 'td', 'el-table_1_column_6')
         status = status_cell.text.strip()
         
-        if status not in ["Assigned", "Completed"]:
+        if status in ["Assigned", "Completed"]:
             # Click the order number button to open the side panel
             order_number_button = wait_for_element(row, 'td', 'el-table_1_column_1')
             print(f"Processing order: {order_number_button.text.strip()} \n")
@@ -110,7 +110,7 @@ def scrape_orders():
             try:
                 tooth_number = order_details.find('p', string='Tooth Number').find_next_sibling('p').text.strip()
             except AttributeError:
-                tooth_number = "?"
+                tooth_number = ""
             # Find the download PLY button and execute a click event on it
             # Locate the footer element first
             footer = WebDriverWait(driver, 10).until(

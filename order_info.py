@@ -45,39 +45,37 @@ class OrderInfo:
         self.product += string if self.product == "" else f" + {string}" 
 
     def _extract_patient_number(self):
-        if self.patient_number != "": return
         # Define regex pattern for variations of patient number
         # Match variations like 'pat', 'Pat.', 'Pat Nr.', 'Patientennummer', followed by a number
-        pattern = r'\b(?:pat(?:ientennummer)?(?:\.|\s*Nr\.|\s*nummer|nr)?\s*[.:]?\s*)(\d{2,})'
-        match = re.search(pattern, self.remarks, re.IGNORECASE)
-        self.patient_number = match.group(1) if match else "?"
+        text = self.remarks.lower()
 
-    def _extract_details(self):
-        
-        details = []
-        lower_remarks = self.remarks.lower()
-        if self._has_multiple_products:
-            details.append("multiple")
+        # Define regex patterns for different variants
+        patterns = [
+            (r"patientennummer\s*:?\s*(\d+)", 1),             # Variant 1
+            (r"pat\.?\s*nummer\s*:?\s*(\d+)", 1),            # Variant 2
+            (r"patienten-nummer\s*:?\s*(\d+)", 1),           # Variant 3
+            (r"patienten\s*nmr\s*:?(\d+)", 1),               # Variant 4
+            (r"pat\.?\s*(nummer|nmr|nr)\.?\s*:?(\d+)", 2),   # Variant 5
+            (r"patient\s*(nummer|nmr|nr)\s*:?(\d+)", 2),     # Variant 6
+            (r"pat\.?\s*nr\.?\s*:\s*(\d+)", 1),              # Variant 7
+            (r"pat\.?\s*:?(\d+)", 1),                        # Variant 8
+            (r"pat\s+(\d+)", 1),                             # Variant 9
+            (r"pat\.?\s*(\d+),?", 1),                        # Variant 10
+        ]
 
-        try:
-            # K, B, HSchien, TK, V
-            if Products.KRONE in self.product:
-                if re.search(r'\bteilkrone\b|\btk\b', lower_remarks):
-                    details.append("TK")
-                if re.search(r'\bkrone\b', lower_remarks) or re.search(r'\bkeramikkrone\b', lower_remarks):
-                    details.append("K")
-            if Products.BRUECKE in self.product:
-                details.append("B")
-            if Products.SCHIENE in self.product:
-                details.append("HSchiene")
-            if Products.VENEER in self.product:
-                details.append("V")
-            if Products.VERBANDPLATTE in self.product:
-                details.append("VB")
+        # Test each pattern
+        for pattern, group_index in patterns:
+            match = re.search(pattern, text, re.IGNORECASE)
+            if match:
+                self.patient_number = match.group(group_index)
+                return
+        self.patient_number = "?"
+
+    def _append_UK_OK(self, remark, details):
 
             # Check for UK and OK
-            has_uk = bool(re.search(r'\buk\b|unterkiefer', lower_remarks))
-            has_ok = bool(re.search(r'\bok\b|oberkiefer', lower_remarks))
+            has_uk = bool(re.search(r'\buk\b|unterkiefer', remark))
+            has_ok = bool(re.search(r'\bok\b|oberkiefer', remark))
             
             if has_uk and has_ok:
                 details.append("OK+UK")
@@ -85,29 +83,75 @@ class OrderInfo:
                 details.append("UK")
             elif has_ok:
                 details.append("OK")
-            
-            # can be ? which is fine, because that means they didnt input the
-            # tooth number in the correct part of the details form
-            details.append(self.tooth_number)
 
+    def _extract_details(self):
+        
+        details = []
+        lower_remarks = self.remarks.lower()
+
+        try:
+            # K, B, HSchien, TK, V
+            for product in Products:
+                if product in self.product:
+                    if product == Products.KRONE:
+                        if re.search(r'\bteilkrone\b|\btk\b', lower_remarks):
+                            details.append(Products.TEILKRONE.abbrev())
+                        else:
+                            details.append(Products.KRONE.abbrev())
+                    else:
+                        details.append(product.abbrev())
+                        if product == Products.SCHIENE:
+                            self._append_UK_OK(lower_remarks, details)
+            
+            details.append(self.tooth_number)
             tooth_colors = re.findall(r'\b(A[1-4](?:\.5|,5)?|B[1-4]|C[1-4]|D[2-4])\b', self.remarks)
             details.extend(tooth_colors)
-
             details_str = ' '.join(details).strip()
             self.details = details_str if details_str else "?"
         except Exception as e:
             print(f"Error constructing details: {e}")
             self.details = "?"  
     
+    def _extract_tooth_numbers(self):
+        text = self.remarks.lower()
+        # Patterns for specific cases
+        patterns = {
+            "dash": r"\b\d{2}-\d{2}\b",          # Tooth numbers with dashes
+            "plus": r"\b\d{2}\+\d{2}\b",         # Tooth numbers with plus
+            "comma": r"\b\d{2}(,\d{2})+\b",      # Tooth numbers with commas
+            "neu": r"\b\d{2}\s*neu\b",           # Tooth numbers with "neu"
+            "standalone": r"\b\d{2}\b"           # Standalone two-digit tooth numbers
+        }
+
+        results = []
+
+        for label, pattern in patterns.items():
+            matches = re.findall(pattern, text)
+            for match in matches:
+                if label == "plus":
+                    # Replace "+" with space for "plus" pattern
+                    match = match.replace("+", " ")
+                elif label == "comma":
+                    # Replace "," with space for "comma" pattern
+                    match = match.replace(",", " ")
+                results.append(match)
+
+        self.tooth_number = " ".join(results) if len(results) else "?"
+
     def _parse_remarks(self):
         # 2024-11-08 09:46:50
         remarks = self.remarks.lower()
         for product in Products:
-            if product.lower() in remarks:
+            if product == Products.TEILKRONE:
+                continue
+            elif product.lower() in remarks:
                 self._write_to_product(product)
         self._has_multiple_products = "+" in self.product
         
-        self._extract_patient_number()
+        if self.patient_number == "":
+            self._extract_patient_number()
+        if self.tooth_number == "":
+            self._extract_tooth_numbers()
         self._extract_details()
         
     def __repr__(self):
