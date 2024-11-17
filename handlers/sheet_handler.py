@@ -30,7 +30,7 @@ class GSheetHandler:
 
     def download(self) -> list[list[str]]:
         # download all rows, but exclude the headers
-        return self.source_sheet.get_all_values()[1:]
+        return self.source_sheet.get_all_values()
     
     def update_cell(self, row: int, col: int, value: str):
         self.source_sheet.update_cell(row, col, value)

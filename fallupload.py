@@ -88,12 +88,13 @@ def handle_orders():
     source_rows = gsheet_handler.download()
 
     folder_paths = []
-    for index, row in enumerate(source_rows):
+    # starting with index=1 because gsheet uses 1 based indexing
+    for index, row in enumerate(source_rows, start=1):
         if row[COLUMN_MAPPING_SOURCE["Übertragen"]]:
             continue
         order_info = extract_order_info(row)
         column_index = COLUMN_MAPPING_SOURCE["Übertragen"] + 1  # gsheet uses 1 based indexing
-        gsheet_handler.update_cell(index+1, column_index, "yes")
+        gsheet_handler.update_cell(index, column_index, "yes")
         folder_path = gdrive_handler.download(order_info.link_to_folder)
         folder_paths.append(folder_path)
         order_info_list.append(order_info)

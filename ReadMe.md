@@ -33,7 +33,10 @@ Create a .env file in the project root and add email and password for Neoss Logi
 ```bash
 EMAIL=your_email@example.com
 PASSWORD=your_password
+EB=NameOfDoctorsForEB
+LB=NameOfDoctorsForEB
 ```
+Note the names of the doctors have to match the names in the Neoss order.
 
 ### **2. credentials.json**
 Place your google api credentials in the project root directory and name it credentials.json

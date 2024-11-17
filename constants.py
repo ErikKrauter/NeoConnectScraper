@@ -14,14 +14,16 @@ LB = os.getenv("EB")
 
 # Ids of google sheets
 original_sheet_id = "1U754gABJNVSj4j-pyQ2C-YIWPCXGSEpPoofp1GAs1IQ"
+# for testing and development
 backup_sheet_id = "1pThfMBh_yRXYSuXag7cEPiSvAl8CpNuIhc5sZi5x7II"
-DESTINATION_SHEET_ID = backup_sheet_id
+DESTINATION_SHEET_ID = original_sheet_id
 SOURCE_SHEET_ID = "1dwRGpB-uDG7MTg_NZkEKl6HfCW0Ao9NbXNrsv-3v48M"
 
 # ids for google drive directories
-original_folder =  "13BliX0dUGYjnSTeBLD1kV5tkKQtnPjFC" 
+original_folder =  "13BliX0dUGYjnSTeBLD1kV5tkKQtnPjFC"
+# for testing and development
 test_folder = "1r6IwzFcXUfLQzS6NheFgk1RWAqOxwaro"
-BASE_FOLDER_ID = test_folder
+BASE_FOLDER_ID = original_folder
 
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets", 'https://www.googleapis.com/auth/drive']
