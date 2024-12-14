@@ -24,13 +24,26 @@ class GSheetHandler:
         row_data[COLUMN_MAPPING_DESTINATION['Nachricht']] = order_info.remarks
         row_data[COLUMN_MAPPING_DESTINATION['Anhänge']] = order_info.link_to_folder
         
+        # just to be sure i encode and decode using utf-8
+        # windows defaults to cp1252 so I hardcode it to utf-8 instead
+        row_data = [str(data).encode('utf-8').decode('utf-8') if isinstance(data, str) else data for data in row_data]
+
         # Append the row to the sheet
         self.destination_sheet.append_row(row_data)
         print(f"Order Info {order_info.order_number} uploaded to Google Sheet \n")
 
     def download(self) -> list[list[str]]:
-        # download all rows, but exclude the headers
-        return self.source_sheet.get_all_values()
+        # Download all rows but exclude empty rows
+        rows = [row for row in self.source_sheet.get_all_values() if any(row)]
+        
+        # Ensure all strings are encoded in UTF-8
+        processed_rows = [
+            [str(cell).encode('utf-8').decode('utf-8') if isinstance(cell, str) else cell for cell in row]
+            for row in rows
+        ]
+        
+        return processed_rows
+
     
     def update_cell(self, row: int, col: int, value: str):
         self.source_sheet.update_cell(row, col, value)

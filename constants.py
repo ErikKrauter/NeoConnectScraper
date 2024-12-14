@@ -16,7 +16,7 @@ LB = os.getenv("EB")
 original_sheet_id = "1U754gABJNVSj4j-pyQ2C-YIWPCXGSEpPoofp1GAs1IQ"
 # for testing and development
 backup_sheet_id = "1pThfMBh_yRXYSuXag7cEPiSvAl8CpNuIhc5sZi5x7II"
-DESTINATION_SHEET_ID = original_sheet_id
+DESTINATION_SHEET_ID = original_sheet_id # original_sheet_id
 SOURCE_SHEET_ID = "1dwRGpB-uDG7MTg_NZkEKl6HfCW0Ao9NbXNrsv-3v48M"
 
 # ids for google drive directories

@@ -1,4 +1,7 @@
 import helium
+import platform
+import os
+import sys
 import time
 from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
@@ -44,17 +47,20 @@ def simple_login():
         print("Login successful.")
     except TimeoutException:
         print("Time out: You have to solve the captcha and login within 120 seconds.")
-        exit()
+        sys.exit()
 
 def scrape_orders():
 
-    gsheet_client, gdrive_client = initialize_services("credentials.json")
+    gsheet_client, gdrive_client = initialize_services(os.path.abspath("credentials.json"))
     gsheet_handler = GSheetHandler(client=gsheet_client)
     gdrive_handler = GDriveHandler(client=gdrive_client)
     order_info_list: List[OrderInfo] = []
 
     options = Options()
     options.add_argument("--start-maximized")  # Start Chrome in full size window
+    if platform.system() == "Windows":
+        options.add_argument("--disable-extensions")
+        options.add_argument("--disable-popup-blocking")
     helium.start_chrome(NEOSS_LINK, options=options)
     helium.go_to(NEOSS_LINK)
     simple_login()
@@ -69,7 +75,7 @@ def scrape_orders():
     table_body = wait_for_element(soup, 'div', 'el-table__body-wrapper')
     if table_body is None:
         print("Table not found. EXITING")
-        exit()
+        sys.exit()
     rows = table_body.find_all('tr', {'class': 'el-table__row'})
 
     # Loop over each row in the table
@@ -77,9 +83,9 @@ def scrape_orders():
 
         # Check if the row status is unassigned
         status_cell = wait_for_element(row, 'td', 'el-table_1_column_6')
-        status = status_cell.text.strip()
+        status = status_cell.text.strip().encode('utf-8').decode('utf-8')
         
-        if status in ["Assigned", "Completed"]:
+        if status not in ["Assigned", "Completed"]:
             # Click the order number button to open the side panel
             order_number_button = wait_for_element(row, 'td', 'el-table_1_column_1')
             print(f"Processing order: {order_number_button.text.strip()} \n")
@@ -99,16 +105,18 @@ def scrape_orders():
             order_details_panel = container.find_all('div', class_='el-collapse-item')[1]
             order_details = order_details_panel.find('div', class_='el-collapse-item__wrap')    # Panel for Order Details
 
+            # I explicitly encode/decode using utf-8 to make sure this works crossplatform
+            # afaik windows uses a different default encoding
             # Extract information from Basic Information
-            order_number = basic_information.find('p', string='Order Number').find_next_sibling('p').text.strip()
-            doctor_name = basic_information.find('p', string="Doctor's Name").find_next_sibling('p').text.strip()
-            scan_time = basic_information.find('p', string='Scan Time').find_next_sibling('p').text.strip()
+            order_number = basic_information.find('p', string='Order Number').find_next_sibling('p').text.strip().encode('utf-8').decode('utf-8')
+            doctor_name = basic_information.find('p', string="Doctor's Name").find_next_sibling('p').text.strip().encode('utf-8').decode('utf-8')
+            scan_time = basic_information.find('p', string='Scan Time').find_next_sibling('p').text.strip().encode('utf-8').decode('utf-8')
             
             # Extract information from Order Details
-            remarks = order_details.find('p', string='Remarks').find_next_sibling('p').text.strip()
+            remarks = order_details.find('p', string='Remarks').find_next_sibling('p').text.strip().encode('utf-8').decode('utf-8')
             # tooth_number is not always provided
             try:
-                tooth_number = order_details.find('p', string='Tooth Number').find_next_sibling('p').text.strip()
+                tooth_number = order_details.find('p', string='Tooth Number').find_next_sibling('p').text.strip().encode('utf-8').decode('utf-8')
             except AttributeError:
                 tooth_number = ""
             # Find the download PLY button and execute a click event on it
@@ -146,5 +154,8 @@ def scrape_orders():
         # this uploads the order_info to the gsheet
         gsheet_handler.upload(order_info)
 
-    helium.kill_browser()
+    try:
+        helium.kill_browser()
+    except Exception as e:
+        print(f"Error closing browser: {e}")
     

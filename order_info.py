@@ -1,5 +1,6 @@
 from constants import DOCTORS_OFFICES, Products
 import re
+import datetime
 
 
 # Define a class to hold the order information
@@ -7,10 +8,11 @@ import re
 class OrderInfo:
     def __init__(self, order_number: str, doctor_name: str, scan_time: str, remarks: str = "", tooth_number: str = "", patient_number: str = ""):
         self.order_number = order_number
-        self.doctors_office = DOCTORS_OFFICES[doctor_name]
+        self.doctors_office = DOCTORS_OFFICES.get(doctor_name, "Unknown")  # Default to "Unknown" if not found
         self.scan_date = self._convert_time_stamp_to_date(scan_time)
         # to make sure the remark is a single line w/o line breaks
-        self.remarks = remarks.replace('\n', ' ')
+        # encode/decode using utf-8 for cross-plattform robustness
+        self.remarks = remarks.replace('\r\n', '\n').replace('\n', ' ').encode('utf-8').decode('utf-8') if isinstance(remarks, str) else remarks
         self.tooth_number = tooth_number # if multiple number seperate by comma w/o blanks
         self.product = ""
         self.details = ""
@@ -21,25 +23,24 @@ class OrderInfo:
         # 08.11.24 --> 24.11.08
         self.reverse_scan_date = ".".join(self.scan_date.split(".")[::-1])
         self.link_to_folder = None
-
+    
+    # convert to dd.mm.yy
     def _convert_time_stamp_to_date(self, time_stamp: str):
-        if "-" in time_stamp:
-            # this is the format that comes from NEOSS
-            # 2024-11-08 09:46:50 --> 08.11.24
-            date = time_stamp[:10]
-            date_list = date.split("-")
-            # 2024 -> 24
-            date_list[0] = date_list[0][2:]
-            reversed_date_list = date_list[::-1]
-            out_date_list = reversed_date_list
-        elif "." in time_stamp:
-            # thats the format coming from Fallupload
-            # 17.11.2024 16:17:14 --> 17.11.24
-            date = time_stamp[:10]
-            date_list = date.split(".")
-            date_list[-1] = date_list[-1][2:]
-            out_date_list = date_list
-        return ".".join(out_date_list)
+        # thats the format coming from Fallupload
+        # 17.11.2024 16:17:14 --> 17.11.24
+        # this is the format that comes from NEOSS
+        # 2024-11-08 09:46:50 --> 08.11.24
+        formats = [
+            "%Y-%m-%d %H:%M:%S",  # NEOSS format
+            "%d.%m.%Y %H:%M:%S"   # Fallupload format
+        ]
+        for fmt in formats:
+            try:
+                parsed_date = datetime.strptime(time_stamp, fmt)
+                return parsed_date.strftime("%d.%m.%y")  # Convert to desired format
+            except ValueError:
+                continue
+        raise ValueError(f"Invalid timestamp format: {time_stamp}")
         
     def _write_to_product(self, string: str):
         self.product += string if self.product == "" else f" + {string}" 

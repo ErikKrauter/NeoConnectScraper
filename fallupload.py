@@ -3,6 +3,7 @@ from utils import initialize_services, COLUMN_MAPPING_SOURCE, SOURCE_SHEET_TABLE
 from order_info import OrderInfo
 from typing import List
 from constants import Products
+import os
 
 def write_to_product(product: str, string: str) -> str:
     """Add a string to the product description."""
@@ -35,7 +36,7 @@ def extract_order_info(row: list[str]) -> OrderInfo:
     # Define mapping of product types to their columns
     product_details_mapping = [
         (Products.VERBANDPLATTE, [COLUMN_MAPPING_SOURCE["VP_Details1"], COLUMN_MAPPING_SOURCE["VP_Details2"]]),
-        (Products.VERBANDPLATTE, [COLUMN_MAPPING_SOURCE["VP2_Details1"], COLUMN_MAPPING_SOURCE["VP2_Details2"]]),
+        (Products.VERBANDPLATTE, [COLUMN_MAPPING_SOURCE["Vfolder_path = os.path.abspath(folder_path)P2_Details1"], COLUMN_MAPPING_SOURCE["VP2_Details2"]]),
         (Products.BOHRSCHABLONE, [COLUMN_MAPPING_SOURCE["BS_Details"]]),
         (Products.BOHRSCHABLONE, [COLUMN_MAPPING_SOURCE["BS2_Details"]]),
         (Products.KRONE, [COLUMN_MAPPING_SOURCE["K_Details"]]),
@@ -53,7 +54,7 @@ def extract_order_info(row: list[str]) -> OrderInfo:
             if product_type not in processed_products:
                 product = write_to_product(product, product_type)
                 processed_products.add(product_type)
-            # the details however contain the product details for each product even if we order same product twice
+            # the details however shall contain the product details for each product even if we order same product twice
             add_details(product_type.abbrev(), details_list, row, *columns)
 
     # Join and clean details
@@ -81,7 +82,7 @@ def handle_orders():
     # update OrderInfo with link
     # Once looped through all rows loop through the list of OrderInfo
     # upload every individual OrderInfo to destination sheet.
-    gsheet_client, gdrive_client = initialize_services("credentials.json")
+    gsheet_client, gdrive_client = initialize_services(os.path.abspath("credentials.json"))
     gsheet_handler = GSheetHandler(client=gsheet_client)
     gdrive_handler = GDriveHandler(client=gdrive_client)
     order_info_list: List[OrderInfo] = []
@@ -104,6 +105,9 @@ def handle_orders():
         return
     
     for order_info, folder_path in zip(order_info_list, folder_paths):
+        # just to make sure we have a normalized absolute path
+        # this should work crossplatform
+        folder_path = os.path.abspath(folder_path)
         # this uploads to gdrive and returns the link to the gdrive folder
         order_info.link_to_folder = gdrive_handler.upload(order_info, folder_path)
         # this uploads the order_info to the gsheet
