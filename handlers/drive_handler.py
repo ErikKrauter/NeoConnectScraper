@@ -38,10 +38,7 @@ class GDriveHandler:
     def _upload_ply_files(self, folder_id: str, zip_file_path: str):
         with zipfile.ZipFile(zip_file_path, 'r') as zip_ref:
             extracted_folder_path = os.path.splitext(zip_file_path)[0]  # Remove .zip extension
-
-            # Ensure compatibility with OS
             extracted_folder_path = extracted_folder_path.replace("_ply", "")
-
             zip_ref.extractall(extracted_folder_path)  # Extract ZIP
 
             # Locate and upload each .ply file

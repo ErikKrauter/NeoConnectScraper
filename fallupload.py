@@ -36,7 +36,7 @@ def extract_order_info(row: list[str]) -> OrderInfo:
     # Define mapping of product types to their columns
     product_details_mapping = [
         (Products.VERBANDPLATTE, [COLUMN_MAPPING_SOURCE["VP_Details1"], COLUMN_MAPPING_SOURCE["VP_Details2"]]),
-        (Products.VERBANDPLATTE, [COLUMN_MAPPING_SOURCE["Vfolder_path = os.path.abspath(folder_path)P2_Details1"], COLUMN_MAPPING_SOURCE["VP2_Details2"]]),
+        (Products.VERBANDPLATTE, [COLUMN_MAPPING_SOURCE["VP2_Details1"], COLUMN_MAPPING_SOURCE["VP2_Details2"]]),
         (Products.BOHRSCHABLONE, [COLUMN_MAPPING_SOURCE["BS_Details"]]),
         (Products.BOHRSCHABLONE, [COLUMN_MAPPING_SOURCE["BS2_Details"]]),
         (Products.KRONE, [COLUMN_MAPPING_SOURCE["K_Details"]]),

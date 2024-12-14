@@ -23,7 +23,7 @@ SOURCE_SHEET_ID = "1dwRGpB-uDG7MTg_NZkEKl6HfCW0Ao9NbXNrsv-3v48M"
 original_folder =  "13BliX0dUGYjnSTeBLD1kV5tkKQtnPjFC"
 # for testing and development
 test_folder = "1r6IwzFcXUfLQzS6NheFgk1RWAqOxwaro"
-BASE_FOLDER_ID = original_folder
+BASE_FOLDER_ID = test_folder
 
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets", 'https://www.googleapis.com/auth/drive']

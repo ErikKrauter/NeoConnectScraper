@@ -26,7 +26,7 @@ class GSheetHandler:
         
         # just to be sure i encode and decode using utf-8
         # windows defaults to cp1252 so I hardcode it to utf-8 instead
-        row_data = [str(data).encode('utf-8').decode('utf-8') if isinstance(data, str) else data for data in row_data]
+        # row_data = [str(data).encode('utf-8').decode('utf-8') if isinstance(data, str) else data for data in row_data]
 
         # Append the row to the sheet
         self.destination_sheet.append_row(row_data)
@@ -34,15 +34,15 @@ class GSheetHandler:
 
     def download(self) -> list[list[str]]:
         # Download all rows but exclude empty rows
-        rows = [row for row in self.source_sheet.get_all_values() if any(row)]
+        # rows = [row for row in self.source_sheet.get_all_values() if any(row)]
         
         # Ensure all strings are encoded in UTF-8
-        processed_rows = [
-            [str(cell).encode('utf-8').decode('utf-8') if isinstance(cell, str) else cell for cell in row]
-            for row in rows
-        ]
+        # processed_rows = [
+             #[str(cell).encode('utf-8').decode('utf-8') if isinstance(cell, str) else cell for cell in row]
+             #for row in rows
+         #]
         
-        return processed_rows
+        return [row for row in self.source_sheet.get_all_values() if any(row)]
 
     
     def update_cell(self, row: int, col: int, value: str):
