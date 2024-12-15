@@ -6,10 +6,19 @@ import datetime
 # Define a class to hold the order information
 # we use OrderInfo to populate the destinatin google sheet (Druckaufträge)
 class OrderInfo:
-    def __init__(self, order_number: str, doctor_name: str, scan_time: str, remarks: str = "", tooth_number: str = "", patient_number: str = ""):
+    def __init__(self, order_number: str,
+                  doctor_name: str, 
+                  scan_time: str, 
+                  delivery_date: str, 
+                  remarks: str = "", 
+                  tooth_number: str = "", 
+                  patient_number: str = "", 
+                  case_name: str = ""):
+        
         self.order_number = order_number
         self.doctors_office = DOCTORS_OFFICES.get(doctor_name, "Unknown")  # Default to "Unknown" if not found
         self.scan_date = self._convert_time_stamp_to_date(scan_time)
+        self.delivery_date = self._convert_time_stamp_to_date(delivery_date)
         # to make sure the remark is a single line w/o line breaks
         # encode/decode using utf-8 for cross-plattform robustness
         self.remarks = remarks.replace('\r\n', '\n').replace('\n', ' ').encode('utf-8').decode('utf-8') if isinstance(remarks, str) else remarks
@@ -21,27 +30,35 @@ class OrderInfo:
         if self.remarks:
             self._parse_remarks()
         # 08.11.24 --> 24.11.08
-        self.reverse_scan_date = ".".join(self.scan_date.split(".")[::-1])
+        self.reverse_scan_date = "_".join(self.scan_date.split(".")[::-1])
         self.link_to_folder = None
+        self.case_name = case_name 
     
     # convert to dd.mm.yy
     def _convert_time_stamp_to_date(self, time_stamp: str):
-        if "-" in time_stamp:
-            # this is the format that comes from NEOSS
+        if "/" in time_stamp:
+            # this is the format that comes from NEOSS (new)
+            # Format: 12/10/2024, 4:38 PM
+            # Convert to: 10.12.24
+            date = time_stamp.split(",")[0]
+            month, day, year = date.split("/")
+            month = month if len(month)==2 else f"0{month}"
+        elif "-" in time_stamp:
+            # this is the format that comes from NEOSS (old)
             # 2024-11-08 09:46:50 --> 08.11.24
             date = time_stamp[:10]
-            date_list = date.split("-")
-            # 2024 -> 24
-            date_list[0] = date_list[0][2:]
-            reversed_date_list = date_list[::-1]
-            out_date_list = reversed_date_list
+            month, day, year  = date.split("-")
         elif "." in time_stamp:
             # thats the format coming from Fallupload
             # 17.11.2024 16:17:14 --> 17.11.24
             date = time_stamp[:10]
-            date_list = date.split(".")
-            date_list[-1] = date_list[-1][2:]
-            out_date_list = date_list
+            month, day, year = date.split(".")
+        
+        month = month if len(month)==2 else f"0{month}"
+        day = day if len(day)==2 else f"0{day}"
+        # 2024 -> 24
+        year = year[2:]
+        out_date_list = [day, month, year]
         return ".".join(out_date_list)
         
     def _write_to_product(self, string: str):
@@ -54,7 +71,7 @@ class OrderInfo:
 
         # Define regex patterns for different variants
         patterns = [
-            (r"patientennummer\s*:?\s*(\d+)", 1),             # Variant 1
+            (r"patientennummer\s*:?\s*(\d+)", 1),            # Variant 1
             (r"pat\.?\s*nummer\s*:?\s*(\d+)", 1),            # Variant 2
             (r"patienten-nummer\s*:?\s*(\d+)", 1),           # Variant 3
             (r"patienten\s*nmr\s*:?(\d+)", 1),               # Variant 4
@@ -158,4 +175,4 @@ class OrderInfo:
         self._extract_details()
         
     def __repr__(self):
-        return f"OrderInfo(order_number='{self.order_number}', doctor_office='{self.doctors_office}', scan_time='{self.scan_date}', product='{self.product}', tooth_number='{self.tooth_number}', remarks='{self.remarks}')"
+        return f"OrderInfo(order_number='{self.order_number}', doctor_office='{self.doctors_office}', scan_date='{self.scan_date}', delivery_date='{self.delivery_date}', product='{self.product}', tooth_number='{self.tooth_number}', remarks='{self.remarks}')"

@@ -25,6 +25,7 @@ COLUMN_MAPPING_DESTINATION = {
     'Auftrag': DESTINATION_SHEET_TABLE_HEADERS.index('Auftrag'),  # product
     'Details': DESTINATION_SHEET_TABLE_HEADERS.index('Details'),  # tooth_number
     'Eingang': DESTINATION_SHEET_TABLE_HEADERS.index('Eingang'),  # scan_date
+    'Einsetztermin': DESTINATION_SHEET_TABLE_HEADERS.index('Einsetztermin'),
     'Auftragsnummer': DESTINATION_SHEET_TABLE_HEADERS.index('Auftragsnummer'), # order_number
     'Nachricht': DESTINATION_SHEET_TABLE_HEADERS.index('Nachricht'),  # remarks
     'Anhänge': DESTINATION_SHEET_TABLE_HEADERS.index('Anhänge'), # link_to_folder

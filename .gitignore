@@ -9,3 +9,6 @@ credentials.json
 __pycache__/
 *.pyc
 *.pyo
+
+#ide
+.vscode

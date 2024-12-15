@@ -10,7 +10,7 @@ load_dotenv()
 EMAIL = os.getenv("EMAIL")
 PASSWORD = os.getenv("PASSWORD")
 EB = os.getenv("EB")
-LB = os.getenv("EB")
+LB = os.getenv("LB")
 
 # Ids of google sheets
 original_sheet_id = "1U754gABJNVSj4j-pyQ2C-YIWPCXGSEpPoofp1GAs1IQ"
@@ -27,8 +27,8 @@ BASE_FOLDER_ID = test_folder
 
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets", 'https://www.googleapis.com/auth/drive']
-NEOSS_LINK = "https://neoss.allied-star.com/"
-ORDER_MANAGEMETN_LINK = "https://neoss.allied-star.com/order-management/order-management"
+NEOSS_LINK = "https://neoconnect.ios-connect.com/login" # "https://neoss.allied-star.com/"
+ORDER_MANAGEMETN_LINK = "https://neoconnect.ios-connect.com/order-management" # "https://neoss.allied-star.com/order-management/order-management"
 DOCTORS_OFFICES = { 
                     EB: "EB",
                     LB: "LB",

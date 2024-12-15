@@ -58,7 +58,7 @@ class GDriveHandler:
                         print(f'Uploaded file {file_name} with ID: {google_drive_file.get("id")}')
 
     # Upload files to destination drive folder
-    def upload(self, order_info: OrderInfo, zip_file_path_: str = None) -> str:
+    def upload(self, order_info: OrderInfo, zip_file_path: str) -> str:
         # Generate the main folder name
         suffix = order_info.patient_number if order_info.patient_number != "?" else order_info.order_number
         main_folder_name = f"{order_info.doctors_office}{suffix}"
@@ -71,16 +71,12 @@ class GDriveHandler:
         main_folder_id = self._find_or_create_folder(BASE_FOLDER_ID, main_folder_name)
 
         # Generate the subfolder name
-        subfolder_name = f"{order_info.reverse_scan_date.replace('.', '_')}_{order_info.details.replace(' ', '_')}"
+        subfolder_name = f"{order_info.reverse_scan_date}_{order_info.details.replace(' ', '_')}"
         if platform.system() == "Windows":
             subfolder_name = subfolder_name.replace("<", "_").replace(">", "_").replace(":", "_")
 
         subfolder_id = self._find_or_create_folder(main_folder_id, subfolder_name)
 
-        # Locate the .zip file
-        download_dir = os.path.join(os.path.expanduser("~"), "Downloads")
-        zip_file_path = zip_file_path_ if zip_file_path_ else os.path.join(download_dir, f"{order_info.order_number}_ply.zip")
-        
         if os.path.exists(zip_file_path):
             self._upload_ply_files(subfolder_id, zip_file_path)
         else:

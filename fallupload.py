@@ -25,6 +25,7 @@ def add_details(abbrev, details_list, row, *columns):
 
 def extract_order_info(row: list[str]) -> OrderInfo:
     scan_time = row[COLUMN_MAPPING_SOURCE["Eingang"]]
+    delivery_date =row[COLUMN_MAPPING_SOURCE["Eingeliederung"]] 
     doctor_name = ""  # Have no doctor's name; defaults to DG.
     patient_number = row[COLUMN_MAPPING_SOURCE["Patient"]]
     order_number = patient_number
@@ -65,6 +66,7 @@ def extract_order_info(row: list[str]) -> OrderInfo:
         order_number=order_number,
         doctor_name=doctor_name,
         scan_time=scan_time,
+        delivery_date=delivery_date,
         patient_number=patient_number
     )
     order_info.product = product

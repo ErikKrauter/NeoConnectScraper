@@ -147,10 +147,12 @@ def scrape_orders():
     if len(order_info_list) == 0:
         print("NO UNASSIGNED ORDERS")
         time.sleep(4)
-
+    
+    download_dir = os.path.join(os.path.expanduser("~"), "Downloads")
     for order_info in order_info_list:
         # this uploads to gdrive and returns the link to the gdrive folder
-        order_info.link_to_folder = gdrive_handler.upload(order_info)
+        zip_file_path = os.path.join(download_dir, f"{order_info.order_number}_ply.zip")
+        order_info.link_to_folder = gdrive_handler.upload(order_info, zip_file_path)
         # this uploads the order_info to the gsheet
         gsheet_handler.upload(order_info)
 

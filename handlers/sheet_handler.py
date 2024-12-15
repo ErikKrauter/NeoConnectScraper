@@ -20,6 +20,7 @@ class GSheetHandler:
         row_data[COLUMN_MAPPING_DESTINATION['Auftrag']] = order_info.product
         row_data[COLUMN_MAPPING_DESTINATION['Details']] = order_info.details
         row_data[COLUMN_MAPPING_DESTINATION['Eingang']] = order_info.scan_date
+        row_data[COLUMN_MAPPING_DESTINATION['Einsetztermin']] = order_info.delivery_date
         row_data[COLUMN_MAPPING_DESTINATION['Auftragsnummer']] = order_info.order_number
         row_data[COLUMN_MAPPING_DESTINATION['Nachricht']] = order_info.remarks
         row_data[COLUMN_MAPPING_DESTINATION['Anhänge']] = order_info.link_to_folder
