@@ -131,6 +131,7 @@ def scrape_orders():
     simple_login()
     # go to site with all orders
     helium.go_to(ORDER_MANAGEMETN_LINK)
+    time.sleep(5)
     
     driver = helium.get_driver()
     html = driver.page_source
@@ -141,12 +142,22 @@ def scrape_orders():
     if table_body is None:
         print("Table not found. EXITING")
         sys.exit()
-    rows = table_body.find_all('tr', {'class': 'el-table__row'})
+
+    rows = WebDriverWait(driver, 15).until(
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'tr.el-table__row'))
+        )
 
     # Loop over each row in the table
     for index, row in enumerate(rows):
-        td_elements = row.find_all('td')
+        WebDriverWait(driver, 10).until(
+            lambda d: len(row.find_elements(By.TAG_NAME, 'td')) > 0
+        )
+        # Fetch the <td> elements
+        td_elements = row.find_elements(By.TAG_NAME, 'td')
+
+        # Access the last <td> element
         last_td = td_elements[-1]
+
         # Check if the row status is unassigned
         status_span = wait_for_element(last_td, 'span', 'text')
         status = status_span.get_text(strip=True)
@@ -156,7 +167,7 @@ def scrape_orders():
         name_span = wait_for_element(case_name_td, 'span', 'nowrap')
         case_text = name_span.get_text(strip=True)
 
-        if status in ["Accepted", "Shipped", "Completed", "Ready"]:
+        if status in ["Accepted", "Shipped", "Completed", "Ready", "Pending"]:
             print(f"Case: {case_text}")
             selenium_rows = WebDriverWait(driver, 10).until(
                 EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'tr.el-table__row'))

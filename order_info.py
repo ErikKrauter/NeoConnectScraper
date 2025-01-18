@@ -1,7 +1,13 @@
 from constants import DOCTORS_OFFICES, Products
 import re
-import datetime
+from openai import OpenAI
+from constants import OPENAI_KEY
 
+
+
+client = OpenAI(
+  api_key=OPENAI_KEY
+)
 
 # Define a class to hold the order information
 # we use OrderInfo to populate the destinatin google sheet (Druckaufträge)
@@ -28,7 +34,7 @@ class OrderInfo:
         self.patient_number = patient_number
         self._has_multiple_products = False
         if self.remarks:
-            self._parse_remarks()
+            self._parse_remarks_with_openai()
         # 08.11.24 --> 24.11.08
         self.reverse_scan_date = "_".join(self.scan_date.split(".")[::-1])
         self.link_to_folder = None
@@ -173,6 +179,98 @@ class OrderInfo:
         if self.tooth_number == "":
             self._extract_tooth_numbers()
         self._extract_details()
+
+    def _parse_remarks_with_openai(self):
+        remarks = self.remarks.lower()
+        for product in Products:
+            if product == Products.TEILKRONE:
+                continue
+            elif product.lower() in remarks:
+                self._write_to_product(product)
+        try:
+            response = client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": (
+                                    "You are a dental lab assistant AI. Your task is to extract the patient number from a given text. "
+                                    "The patient number is a numerical identifier present in the input text. "
+                                    "Always return only the patient number without any additional text. "
+                                    "If no patient number is found in the text, return '?' (a question mark)."
+                                ),
+                            },
+                            {
+                                "role": "user",
+                                "content": (
+                                    f"Extract the patient number from the following text. Your response must only contain the patient number, or '?' if no patient number is found. "
+                                    "Here are some examples of inputs and outputs:\n"
+                                    "- Input: '1264 Schiene Uk bis 6.1' Output: 1264\n"
+                                    "- Input: 'Pat:2040 Bitte um die Kronen 36, 37 Zahnfarbe: A3,5 Fertigstellungsdatum: folgt mit dem Scan am Freitag für 11+12' Output: 2040\n"
+                                    "- Input: 'Pat 402 Bitte 37 Keramik Teilkrone Zahnfarbe: A3' Output: 402\n"
+                                    "- Input: 'Bitte um Herstellung Teilkrone 16 Zahnfarbe : A3,5 Pat. Nr.: 1457 Fertigstellungsdatum: 21.11.' Output: 1457\n"
+                                    "- Input: 'Bitte Herstellung Teilkrone 36+37 Zahnfarbe: A3 Patienten Nr.: 133' Output: 133\n"
+                                    "- Input: 'Bitte Hersetllung Krone 37 A3 Pat. Nummer. : 1543' Output: 1543\n"
+                                    "- Input: 'Bitte Herstellung Keramikkrone Zahnfarbe: A3' Output: ?\n"
+                                    "- Input: 'Schiene UK bis morgen' Output: ?\n\n"
+                                    f"This is the input: {self.remarks}"
+                                ),
+                            },
+                        ]
+                    )
+
+            parsed_data = response["choices"][0]["message"]["content"]
+            self.patient_number = parsed_data.strip()
+            print("open ai found patient number: ", self.patient_number)
+
+        except Exception as e:
+            print(f"Failed to parse patient number with OpenAI: {e}")
+            self.patient_number = "?"
+        try:
+            response = client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": (
+                                    "You are a dental lab assistant AI. Your task is to extract a standardized short hand notation from a given order. "
+                                    "The input is an order that specifies what the lab shall manufacture. "
+                                    "The output contains the relevant iformation in a standardized short hand form. "
+                                    "If you cannot construct a valid output, you must output a question mark (?)."
+                                ),
+                            },
+                            {
+                                "role": "user",
+                                "content": (
+                                    f"Extract the order details from the following order."
+                                    "Here are some examples of inputs and outputs:\n"
+                                    "- Input: 'Bitte Herstellung von Brücke 26,25, 24 Anhänger Zahnfarbe: A3,5' Output: B 24-26 A3,5\n"
+                                    "- Input: 'Bitte Herstellung 12 Keramikkrone Zahnfarbe siehe Bild (A3,5)' Output: K 12 A3,5\n"
+                                    "- Input: 'UK Brücke OK folgt, Kontrolle mit der Einschubrichtung, A3,5 aber weiße Inzisalkante' Output: B UK A3,5\n"
+                                    "- Input: 'Harte Schiene OK, Z.n. Frontzahntrauma 11' Output: HSchiene OK\n"
+                                    "- Input: 'Keramikkronen 16,37 Zahnfarbe A3 Fertigstellung: 29.11. 09:00' Output: K 16+37 A3,5\n"
+                                    "- Input: 'Bitte Herstellung UK adj. Schiene' Output: HSchiene adj. UK\n"
+                                    "- Input: 'Farbe A3 Teilkrone an 14,15,26' Output: TK 14+15+26 A3\n"
+                                    "- Input: 'Bitte Herstellung Krone 17, TK 16 + 46 A3' Output: K 17 A3 TK 16+46 A3\n"
+                                    "- Input: 'Bitte Herstellung 27 Keramiktable Top + 44-47 Keramikbrücke Zahnfarbe: C4' Output: B 44-47 TK 27 C4\n"
+                                    "- Input: 'Bitte Herstellung 15 Teilkrone,16,17 Kronen' Output: TK 15 K 16+17 A3,5\n"
+                                    "- Input: 'Bitte um Herstellung Teilkrone 16 Zahnfarbe : A3,5 Pat. Nr.: 1457 Fertigstellungsdatum: 21.11.' Output: TK 16 A3,5\n"
+                                    "- Input: 'Bitte Hersetllung Krone 37 A3 Pat. Nummer. : 1543' Output: K 37 A3\n"
+                                    "- Input: 'Bitte um Herstellung : 15,16, 36,37 Krone und 26-28 Brücke Zahnfarbe: A3 Brücke noch nicht gepräpt, BItte zunächst Präps sichten.' Output: K 15+16+36+37 B 26-28 A3\n"
+                                    
+                                    f"This is the input: {self.remarks}"
+                                ),
+                            },
+                        ]
+                    )
+
+            parsed_data = response["choices"][0]["message"]["content"]
+            self.details = parsed_data.strip()
+            print("open ai parsed detauls: ", self.details)
+
+        except Exception as e:
+            print(f"Failed to parse details with OpenAI: {e}")
+            self.details = "?"
         
     def __repr__(self):
         return f"OrderInfo(order_number='{self.order_number}', doctor_office='{self.doctors_office}', scan_date='{self.scan_date}', delivery_date='{self.delivery_date}', product='{self.product}', tooth_number='{self.tooth_number}', remarks='{self.remarks}')"

@@ -134,7 +134,8 @@ def scrape_orders():
                                     doctor_name=doctor_name,
                                     scan_time=scan_time,
                                     remarks=remarks, 
-                                    tooth_number=tooth_number
+                                    tooth_number=tooth_number,
+                                    delivery_date=""
                                 )
 
             order_info_list.append(order_info)
