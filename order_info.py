@@ -1,9 +1,8 @@
 from constants import DOCTORS_OFFICES, Products
 import re
 from openai import OpenAI
+from datetime import datetime
 from constants import OPENAI_KEY
-
-
 
 client = OpenAI(
   api_key=OPENAI_KEY
@@ -58,14 +57,15 @@ class OrderInfo:
             # thats the format coming from Fallupload
             # 17.11.2024 16:17:14 --> 17.11.24
             date = time_stamp[:10]
-            month, day, year = date.split(".")
+            day, month, year = date.split(".")
         
         month = month if len(month)==2 else f"0{month}"
         day = day if len(day)==2 else f"0{day}"
         # 2024 -> 24
         year = year[2:]
         out_date_list = [day, month, year]
-        return ".".join(out_date_list)
+        out_date_string = ".".joint(out_date_list)
+        return datetime.strptime(out_date_string, "%d.%m.%y") 
         
     def _write_to_product(self, string: str):
         self.product += string if self.product == "" else f" + {string}" 
@@ -164,8 +164,7 @@ class OrderInfo:
 
         self.tooth_number = " ".join(results) if len(results) else "?"
 
-    def _parse_remarks(self):
-        # 2024-11-08 09:46:50
+    def _extract_product(self):
         remarks = self.remarks.lower()
         for product in Products:
             if product == Products.TEILKRONE:
@@ -173,7 +172,9 @@ class OrderInfo:
             elif product.lower() in remarks:
                 self._write_to_product(product)
         self._has_multiple_products = "+" in self.product
-        
+
+    def _parse_remarks(self):
+        self._extract_product()
         if self.patient_number == "":
             self._extract_patient_number()
         if self.tooth_number == "":
@@ -181,12 +182,7 @@ class OrderInfo:
         self._extract_details()
 
     def _parse_remarks_with_openai(self):
-        remarks = self.remarks.lower()
-        for product in Products:
-            if product == Products.TEILKRONE:
-                continue
-            elif product.lower() in remarks:
-                self._write_to_product(product)
+        self._extract_product()
         try:
             response = client.chat.completions.create(
                         model="gpt-4o-mini",
@@ -219,9 +215,9 @@ class OrderInfo:
                         ]
                     )
 
-            parsed_data = response["choices"][0]["message"]["content"]
+            parsed_data = response.choices[0].message.content
             self.patient_number = parsed_data.strip()
-            print("open ai found patient number: ", self.patient_number)
+            # print("open ai found patient number: ", self.patient_number)
 
         except Exception as e:
             print(f"Failed to parse patient number with OpenAI: {e}")
@@ -264,13 +260,13 @@ class OrderInfo:
                         ]
                     )
 
-            parsed_data = response["choices"][0]["message"]["content"]
+            parsed_data = response.choices[0].message.content
             self.details = parsed_data.strip()
-            print("open ai parsed detauls: ", self.details)
+            # print("open ai parsed details: ", self.details)
 
         except Exception as e:
             print(f"Failed to parse details with OpenAI: {e}")
             self.details = "?"
         
     def __repr__(self):
-        return f"OrderInfo(order_number='{self.order_number}', doctor_office='{self.doctors_office}', scan_date='{self.scan_date}', delivery_date='{self.delivery_date}', product='{self.product}', tooth_number='{self.tooth_number}', remarks='{self.remarks}')"
+        return f"order number:\t{self.order_number}\ndoctor office:\t{self.doctors_office}\ndoctors remarks:\t{self.remarks}\ncase name:\t{self.case_name}\npatient number:\t{self.patient_number}\nscan date:\t{self.scan_date}\ndelivery date:\t{self.delivery_date}\nproduct:\t{self.product}\ntooth number:\t{self.tooth_number}\ndetails:\t{self.details}\n"

@@ -43,9 +43,9 @@ class GDriveHandler:
 
             # Locate and upload each .ply file
             for root, _, files in os.walk(extracted_folder_path):
-                print(f"root: {root}, files: {files}")
+                #print(f"root: {root}, files: {files}")
                 for file in files:
-                    print(f"file: {file}")
+                    #print(f"file: {file}")
                     if file.endswith('.ply') or file.endswith('.mtl') or file.endswith('.jpg'):
                         file_path = os.path.join(root, file)
                         file_name = os.path.basename(file_path)
@@ -55,7 +55,7 @@ class GDriveHandler:
                         }
                         media = MediaFileUpload(file_path, resumable=True)
                         google_drive_file = self.drive_client.files().create(body=file_metadata, media_body=media, fields='id').execute()
-                        print(f'Uploaded file {file_name} with ID: {google_drive_file.get("id")}')
+                        #print(f'Uploaded file {file_name} with ID: {google_drive_file.get("id")}')
 
     # Upload files to destination drive folder
     def upload(self, order_info: OrderInfo, zip_file_path: str) -> str:
@@ -86,6 +86,8 @@ class GDriveHandler:
 
     def _extract_file_id(self, link: str) -> str:
         """Extracts the file ID from a Google Drive link."""
+        if "," in link:
+            link = link.split(",")[0]
         if "id=" in link:
             return link.split("id=")[1]
         elif "drive.google.com" in link:

@@ -99,6 +99,11 @@ def handle_orders():
         column_index = COLUMN_MAPPING_SOURCE["Übertragen"] + 1  # gsheet uses 1 based indexing
         gsheet_handler.update_cell(index, column_index, "yes")
         folder_path = gdrive_handler.download(order_info.link_to_folder)
+        folder_path = os.path.abspath(folder_path)
+        # this uploads to gdrive and returns the link to the gdrive folder
+        order_info.link_to_folder = gdrive_handler.upload(order_info, folder_path)
+        # this uploads the order_info to the gsheet
+        gsheet_handler.upload(order_info)
         folder_paths.append(folder_path)
         order_info_list.append(order_info)
     
@@ -106,12 +111,12 @@ def handle_orders():
         print("NO ORDERS")
         return
     
-    for order_info, folder_path in zip(order_info_list, folder_paths):
+"""     for order_info, folder_path in zip(order_info_list, folder_paths):
         # just to make sure we have a normalized absolute path
         # this should work crossplatform
         folder_path = os.path.abspath(folder_path)
         # this uploads to gdrive and returns the link to the gdrive folder
         order_info.link_to_folder = gdrive_handler.upload(order_info, folder_path)
         # this uploads the order_info to the gsheet
-        gsheet_handler.upload(order_info)
+        gsheet_handler.upload(order_info) """
         

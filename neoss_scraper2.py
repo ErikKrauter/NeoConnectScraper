@@ -31,6 +31,21 @@ def wait_for_element(soup, html_type: str, class_name: str, max_attempts=10):
     print(f"Failed to load element {html_type} of class {class_name}.")
     return None
 
+# Wait for an element to be loaded within a WebElement
+def wait_for_webelement(parent_element, html_type: str, class_name: str, max_attempts=10):
+    attempts = 0
+    while attempts < max_attempts:
+        try:
+            # Use Selenium's find_element to locate the child element
+            element = parent_element.find_element(By.XPATH, f".//{html_type}[@class='{class_name}']")
+            return element
+        except Exception:  # Element not found
+            time.sleep(1)  # Wait a second before trying again
+            attempts += 1
+    
+    print(f"Failed to load element {html_type} of class {class_name}.")
+    return None
+
 def simple_login():
     helium.write(EMAIL, into="User Name")
     time.sleep(0.3)
@@ -43,7 +58,7 @@ def simple_login():
         WebDriverWait(driver, 120).until(
             EC.presence_of_element_located((By.CLASS_NAME, "dashboard-wrap"))
         )
-        print("Login successful.")
+        # print("Login successful.")
     except TimeoutException:
         print("Time out: You have to solve the captcha and login within 120 seconds.")
         sys.exit()
@@ -77,7 +92,7 @@ def export_ply(driver):
     if 'is-checked' in is_checked:
         # Uncheck the checkbox
         stl_checkbox_label.click()
-        print("STL checkbox unchecked.")
+        # print("STL checkbox unchecked.")
 
     # Toggle off the Prescription switch
     prescription_switch = export_dialog.find_element(By.XPATH, './/div[@role="switch"]')
@@ -86,11 +101,11 @@ def export_ply(driver):
     if is_prescription_on == 'true':
         # Un-toggle the switch
         prescription_switch.click()
-        print("Prescription switch toggled off.")
+        # print("Prescription switch toggled off.")
 
     # Click the Confirm button
     helium.click("Confirm")
-    print("Confirm button clicked.")
+    # print("Confirm button clicked.")
 
     # Wait for the "Export Completed" text to be visible
     export_completed = WebDriverWait(driver, 120).until(
@@ -100,11 +115,11 @@ def export_ply(driver):
         )
     )
     if export_completed:
-        print("Export completed successfully.")
+        # print("Export completed successfully.")
 
         # click the "OK" button to close the dialog
         helium.click("OK")
-        print("OK button clicked.")
+        # print("OK button clicked.")
     else:
         print("export failed")
 
@@ -143,15 +158,23 @@ def scrape_orders():
         print("Table not found. EXITING")
         sys.exit()
 
-    rows = WebDriverWait(driver, 15).until(
-            EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'tr.el-table__row'))
-        )
+    # Wait for rows to load initially
+    WebDriverWait(driver, 15).until(
+        EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'tr.el-table__row'))
+    )
 
-    # Loop over each row in the table
-    for index, row in enumerate(rows):
+    # Dynamically refetch rows for each iteration
+    row_count = len(driver.find_elements(By.CSS_SELECTOR, 'tr.el-table__row'))
+    for index in range(row_count):
+        # Refetch the row during each iteration
+        rows = driver.find_elements(By.CSS_SELECTOR, 'tr.el-table__row')
+        row = rows[index]  # Access the row at the current index
+
+        # Wait for <td> elements in the current row
         WebDriverWait(driver, 10).until(
             lambda d: len(row.find_elements(By.TAG_NAME, 'td')) > 0
         )
+
         # Fetch the <td> elements
         td_elements = row.find_elements(By.TAG_NAME, 'td')
 
@@ -159,16 +182,15 @@ def scrape_orders():
         last_td = td_elements[-1]
 
         # Check if the row status is unassigned
-        status_span = wait_for_element(last_td, 'span', 'text')
-        status = status_span.get_text(strip=True)
+        status_span = wait_for_webelement(last_td, 'span', 'text')
+        status = status_span.text.strip()
 
         case_name_td = td_elements[1]
 
-        name_span = wait_for_element(case_name_td, 'span', 'nowrap')
-        case_text = name_span.get_text(strip=True)
+        name_span = wait_for_webelement(case_name_td, 'span', 'nowrap')
+        case_text = name_span.text.strip()
 
         if status in ["Accepted", "Shipped", "Completed", "Ready", "Pending"]:
-            print(f"Case: {case_text}")
             selenium_rows = WebDriverWait(driver, 10).until(
                 EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'tr.el-table__row'))
             )
@@ -189,10 +211,10 @@ def scrape_orders():
             requested_delivery_date = list_items[6].find('div', class_='value').find('span', class_='nowrap').text.strip()
 
             # Print the extracted values
-            print(f"Order ID: {order_number}")
-            print(f"Dentist Name: {doctor_name}")
-            print(f"Order Date: {scan_time}")
-            print(f"Requested Delivery Date: {requested_delivery_date} \n")
+            # print(f"Order ID: {order_number}")
+            # print(f"Dentist Name: {doctor_name}")
+            # print(f"Order Date: {scan_time}")
+            # print(f"Requested Delivery Date: {requested_delivery_date} \n")
 
             # Wait for the memo_wrap to be visible
             memo_wrap = WebDriverWait(driver, 10).until(
@@ -204,7 +226,6 @@ def scrape_orders():
 
             # Get the value of the textarea
             memo_text = textarea.get_attribute('value')
-            print(f"Memo: \n {memo_text} \n")
 
             order_info = OrderInfo(
                         order_number=order_number,
@@ -214,7 +235,7 @@ def scrape_orders():
                         remarks=memo_text,
                         case_name=case_text
                     )
-
+            print(order_info)
             order_info_list.append(order_info)
 
             export_ply(driver)
@@ -226,7 +247,7 @@ def scrape_orders():
 
             # Click the back button
             back_button.click()
-            print("clicked back button. Proceeding with next order \n\n")
+            # print("clicked back button. Proceeding with next order \n\n")
 
             time.sleep(3)
 
