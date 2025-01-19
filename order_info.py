@@ -35,7 +35,7 @@ class OrderInfo:
         if self.remarks:
             self._parse_remarks_with_openai()
         # 08.11.24 --> 24.11.08
-        self.reverse_scan_date = "_".join(self.scan_date.split(".")[::-1])
+        self.reverse_scan_date = self.scan_date.strftime("%y_%m_%d")
         self.link_to_folder = None
         self.case_name = case_name 
     
@@ -61,12 +61,10 @@ class OrderInfo:
         
         month = month if len(month)==2 else f"0{month}"
         day = day if len(day)==2 else f"0{day}"
-        # 2024 -> 24
-        year = year[2:]
         out_date_list = [day, month, year]
-        out_date_string = ".".joint(out_date_list)
-        return datetime.strptime(out_date_string, "%d.%m.%y") 
-        
+        out_date_string = ".".join(out_date_list)
+        return datetime.strptime(out_date_string, "%d.%m.%Y")
+
     def _write_to_product(self, string: str):
         self.product += string if self.product == "" else f" + {string}" 
 

@@ -108,7 +108,7 @@ def handle_orders():
         order_info_list.append(order_info)
     
     if len(order_info_list) == 0:
-        print("NO ORDERS")
+        print("NO NEW ORDERS")
         return
     
 """     for order_info, folder_path in zip(order_info_list, folder_paths):

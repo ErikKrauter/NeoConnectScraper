@@ -35,6 +35,7 @@ EMAIL=your_email@example.com
 PASSWORD=your_password
 EB=NameOfDoctorsForEB
 LB=NameOfDoctorsForEB
+OPENAI_API_KEY=YOUR_OPENAI_KEY
 ```
 Note the names of the doctors have to match the names in the Neoss order.
 
